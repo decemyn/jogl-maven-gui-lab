@@ -15,9 +15,29 @@ import org.jetbrains.annotations.*;
 import javax.swing.*;
 import java.awt.*;
 
-public class MainFrame
-        extends JFrame
-        implements GLEventListener {
+public class MainFrame extends JFrame implements GLEventListener {
+
+    byte[] mask = {
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x03, (byte)0x80, 0x01, (byte)0xC0, 0x06, (byte)0xC0, 0x03, 0x60,
+
+            0x04, 0x60, 0x06, 0x20, 0x04, 0x30, 0x0C, 0x20,
+            0x04, 0x18, 0x18, 0x20, 0x04, 0x0C, 0x30, 0x20,
+            0x04, 0x06, 0x60, 0x20, 0x44, 0x03, (byte)0xC0, 0x22,
+            0x44, 0x01, (byte)0x80, 0x22, 0x44, 0x01, (byte)0x80, 0x22,
+            0x44, 0x01, (byte)0x80, 0x22, 0x44, 0x01, (byte)0x80, 0x22,
+            0x44, 0x01, (byte)0x80, 0x22, 0x44, 0x01, (byte)0x80, 0x22,
+            0x66, 0x01, (byte)0x80, 0x66, 0x33, 0x01, (byte)0x80, (byte)0xCC,
+
+            0x19, (byte)0x81, (byte)0x81, (byte)0x98, 0x0C, (byte)0xC1, (byte)0x83, 0x30,
+            0x07, (byte)0xe1, (byte)0x87, (byte)0xe0, 0x03, 0x3f, (byte)0xfc, (byte)0xc0,
+            0x03, 0x31, (byte)0x8c, (byte)0xc0, 0x03, 0x33, (byte)0xcc, (byte)0xc0,
+            0x06, 0x64, 0x26, 0x60, 0x0c, (byte)0xcc, 0x33, 0x30,
+            0x18, (byte)0xcc, 0x33, 0x18, 0x10, (byte)0xc4, 0x23, 0x08,
+            0x10, 0x63, (byte)0xC6, 0x08, 0x10, 0x30, 0x0c, 0x08,
+            0x10, 0x18, 0x18, 0x08, 0x10, 0x00, 0x00, 0x08};
+
+    int aCircle;
 
     public MainFrame() {
         super("Java OpenGL");
@@ -91,6 +111,29 @@ public class MainFrame
         // Uncomment the following two lines in case of polygon antialiasing
         //gl.glEnable(GL.GL_POLYGON_SMOOTH);
         //glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
+
+        // Generate a unique ID for our list.
+        aCircle = gl.glGenLists(1);
+
+        // Generate the Display List
+        gl.glNewList(aCircle, GL2.GL_COMPILE);
+        drawCircle(gl, 0.5f, 0.5f, 0.4f);
+        gl.glEndList();
+    }
+
+    private void drawCircle(GL2 gl, float xCenter, float yCenter, float radius) {
+
+        double x,y, angle;
+
+        gl.glBegin(GL2.GL_LINE_LOOP);
+        for (int i=0; i<360; i++) {
+            angle = Math.toRadians(i);
+            x = radius * Math.cos(angle);
+            y = radius * Math.sin(angle);
+            gl.glVertex2d(xCenter + x, yCenter + y);
+        }
+        gl.glEnd();
+
     }
 
     @Override
@@ -99,33 +142,11 @@ public class MainFrame
     }
 
     public void display(GLAutoDrawable canvas) {
-
         GL2 gl = canvas.getGL().getGL2();
 
-        // Each time the scene is redrawn we clear the color buffers which is perceived by the user as clearing the scene.
-
-        // Set the color buffer to be filled with the color black when cleared.
-        // It can be defined in the init function (method) also.
-        gl.glClearColor(0.0f, 0.0f, 0.0f, 0);
-
-        // Clear the color buffer.
-        gl.glClear(GL.GL_COLOR_BUFFER_BIT);
-        gl.glPointSize(5.0f); // Set point size to 5 pixels
-
-        gl.glLineWidth(1.5f);
-
-        gl.glColor3f(1.f, 0.f, 0.f);
-        gl.glBegin(GL2.GL_LINES);
-        gl.glVertex2f(0.2f, 0.2f);
-        gl.glVertex2f(0.9f, 0.9f);
-        gl.glEnd();
-
-        gl.glColor3f(0.f, 1.f, 0.f);
-        gl.glBegin(GL2.GL_LINES);
-        gl.glVertex2f(0.9f, 0.2f);
-        gl.glVertex2f(0.2f, 0.9f);
-        gl.glEnd();
-
+        gl.glColor3f(1.0f, 1.0f, 1.0f);
+        // Call the Display List i.e. call the commands stored in it.
+        gl.glCallList(aCircle);
 
     }
 
