@@ -59,51 +59,22 @@ public class MainFrame extends JFrame implements GLEventListener {
     }
 
     private GLU glu;
-    private float sunX = 0;
-    private float sunY = 0;
-    private float sunRadius = 0.1f;
-    private int houseDisplayList;
     public GLCanvas canvas;
 
     public void init(GLAutoDrawable canvas) {
         GL2 gl = canvas.getGL().getGL2();
         glu = new GLU();
 
-        houseDisplayList = gl.glGenLists(1);
-        gl.glNewList(houseDisplayList, GL2.GL_COMPILE);
-        drawHouse(gl);
-        gl.glEndList();
+        gl.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        gl.glViewport(0, 0, 640, 480);
+        gl.glMatrixMode(GL2.GL_PROJECTION);
+        gl.glLoadIdentity();
+        glu.gluOrtho2D(0.0, 640.0, 0.0, 480.0);
+        gl.glMatrixMode(GL2.GL_MODELVIEW);
+        gl.glLoadIdentity();
+        gl.glEnable(GL2.GL_CULL_FACE);
     }
 
-    private void drawHouse(GL2 gl) {
-        gl.glBegin(GL2.GL_TRIANGLES);
-
-        // Roof
-        gl.glColor3f(1.0f, 0.0f, 0.0f);
-        gl.glVertex2f(-0.5f, 0.5f);
-        gl.glVertex2f(0.5f, 0.5f);
-        gl.glVertex2f(0.0f, 0.75f);
-
-        // Left wall
-        gl.glColor3f(0.0f, 1.0f, 0.0f);
-        gl.glVertex2f(-0.5f, 0.5f);
-        gl.glVertex2f(-0.5f, -0.5f);
-        gl.glVertex2f(0.0f, 0.0f);
-
-        // Right wall
-        gl.glColor3f(0.0f, 0.0f, 1.0f);
-        gl.glVertex2f(0.5f, 0.5f);
-        gl.glVertex2f(0.5f, -0.5f);
-        gl.glVertex2f(0.0f, 0.0f);
-
-        // Floor
-        gl.glColor3f(1.0f, 1.0f, 0.0f);
-        gl.glVertex2f(-0.5f, -0.5f);
-        gl.glVertex2f(0.5f, -0.5f);
-        gl.glVertex2f(0.0f, 0.0f);
-
-        gl.glEnd();
-    }
 
     @Override
     public void dispose(GLAutoDrawable glAutoDrawable) {
@@ -114,33 +85,31 @@ public class MainFrame extends JFrame implements GLEventListener {
         GL2 gl = canvas.getGL().getGL2();
         gl.glClear(GL2.GL_COLOR_BUFFER_BIT);
 
-        // Draw the sun
-        gl.glColor3f(1.0f, 1.0f, 0.0f);
-        gl.glBegin(GL2.GL_POLYGON);
-        for (int i = 0; i < 360; i++) {
-            double angle = Math.toRadians(i);
-            gl.glVertex2d(sunX + sunRadius * Math.cos(angle), sunY + sunRadius * Math.sin(angle));
+        // Draw the chess board
+        int size = 8;
+        int squareSize = 64;
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                int x = i * squareSize;
+                int y = j * squareSize;
+                if ((i + j) % 2 == 0) {
+                    gl.glColor3f(1.0f, 1.0f, 1.0f); // white
+                } else {
+                    gl.glColor3f(0.0f, 0.0f, 0.0f); // black
+                }
+                gl.glBegin(GL2.GL_POLYGON);
+                gl.glVertex2i(x, y);
+                gl.glVertex2i(x + squareSize, y);
+                gl.glVertex2i(x + squareSize, y + squareSize);
+                gl.glVertex2i(x, y + squareSize);
+                gl.glEnd();
+            }
         }
-        gl.glEnd();
-
-        // Draw the house
-        gl.glCallList(houseDisplayList);
-
-        // Update the sun position
-        sunX += 0.01f;
-        if (sunX > 1.0f) {
-            sunX = -1.0f;
-        }
+        gl.glFlush();
     }
 
     public void reshape(GLAutoDrawable canvas, int left, int top, int width, int height) {
-        GL2 gl = canvas.getGL().getGL2();
-        gl.glViewport(0, 0, width, height);
-        gl.glMatrixMode(GL2.GL_PROJECTION);
-        gl.glLoadIdentity();
-        glu.gluOrtho2D(-1.0, 1.0, -1.0, 1.0);
-        gl.glMatrixMode(GL2.GL_MODELVIEW);
-        gl.glLoadIdentity();
     }
+
 
 }
