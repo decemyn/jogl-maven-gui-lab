@@ -67,12 +67,6 @@ public class MainFrame extends JFrame implements GLEventListener {
 
         gl.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         gl.glViewport(0, 0, 640, 480);
-        gl.glMatrixMode(GL2.GL_PROJECTION);
-        gl.glLoadIdentity();
-        glu.gluOrtho2D(0.0, 640.0, 0.0, 480.0);
-        gl.glMatrixMode(GL2.GL_MODELVIEW);
-        gl.glLoadIdentity();
-        gl.glEnable(GL2.GL_CULL_FACE);
     }
 
 
@@ -83,29 +77,35 @@ public class MainFrame extends JFrame implements GLEventListener {
 
     public void display(GLAutoDrawable canvas) {
         GL2 gl = canvas.getGL().getGL2();
-        gl.glClear(GL2.GL_COLOR_BUFFER_BIT);
 
-        // Draw the chess board
-        int size = 8;
-        int squareSize = 64;
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                int x = i * squareSize;
-                int y = j * squareSize;
-                if ((i + j) % 2 == 0) {
-                    gl.glColor3f(1.0f, 1.0f, 1.0f); // white
-                } else {
-                    gl.glColor3f(0.0f, 0.0f, 0.0f); // black
-                }
-                gl.glBegin(GL2.GL_POLYGON);
-                gl.glVertex2i(x, y);
-                gl.glVertex2i(x + squareSize, y);
-                gl.glVertex2i(x + squareSize, y + squareSize);
-                gl.glVertex2i(x, y + squareSize);
-                gl.glEnd();
-            }
-        }
-        gl.glFlush();
+        // Set the color of the first vertex
+        gl.glColor3f(1.0f, 0.0f, 0.0f);
+
+        // Draw the first line using GL_LINES
+        gl.glBegin(GL2.GL_LINES);
+        gl.glVertex2f(-0.5f, 0.5f);
+        gl.glVertex2f(0.5f, 0.5f);
+        gl.glEnd();
+
+        // Set the color of the second vertex
+        gl.glColor3f(0.0f, 1.0f, 0.0f);
+
+        // Draw the second line using GL_LINE_STRIP
+        gl.glBegin(GL2.GL_LINE_STRIP);
+        gl.glVertex2f(0.5f, 0.5f);
+        gl.glVertex2f(0.5f, -0.5f);
+        gl.glEnd();
+
+        // Set the color of the third vertex
+        gl.glColor3f(0.0f, 0.0f, 1.0f);
+
+        // Draw the third line using GL_LINE_LOOP
+        gl.glBegin(GL2.GL_LINE_LOOP);
+        gl.glVertex2f(0.5f, -0.5f);
+        gl.glVertex2f(-0.5f, -0.5f);
+        gl.glVertex2f(-0.5f, 0.5f);
+        gl.glEnd();
+
     }
 
     public void reshape(GLAutoDrawable canvas, int left, int top, int width, int height) {
