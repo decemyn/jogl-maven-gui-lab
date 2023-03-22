@@ -3,16 +3,26 @@ package org.uvt;
 import com.jogamp.opengl.*;
 import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.glu.GLU;
-import com.jogamp.opengl.util.Animator;
 import com.jogamp.opengl.GL2;
 
 
-//https://en.wikiversity.org/wiki/Computer_graphics/2013-2014/Laboratory_3
+//https://en.wikiversity.org/wiki/Computer_graphics/2013-2014/Laboratory_4
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.IOException;
 
 public class MainFrame extends JFrame implements GLEventListener {
+
+    // Number of textures we want to create
+    private final int NO_TEXTURES = 2;
+
+    private int texture[] = new int[NO_TEXTURES];
+    TextureReader.Texture[] tex = new TextureReader.Texture[NO_TEXTURES];
+
+    // GLU object used for mipmapping.
+    private GLU glu;
+    public GLCanvas canvas;
 
 
     public MainFrame() {
@@ -28,8 +38,6 @@ public class MainFrame extends JFrame implements GLEventListener {
 
         this.setVisible(true);
     }
-
-    public Animator animator;
 
     private void initializeJogl() {
 
@@ -51,59 +59,49 @@ public class MainFrame extends JFrame implements GLEventListener {
         // Adding an OpenGL event listener to the canvas.
         this.canvas.addGLEventListener(this);
 
-        this.animator = new Animator();
-
-        this.animator.add(this.canvas);
-
-        this.animator.start();
     }
-
-    private GLU glu;
-    private float sunX = 0;
-    private float sunY = 0;
-    private float sunRadius = 0.1f;
-    private int houseDisplayList;
-    public GLCanvas canvas;
 
     public void init(GLAutoDrawable canvas) {
         GL2 gl = canvas.getGL().getGL2();
-        glu = new GLU();
 
-        houseDisplayList = gl.glGenLists(1);
-        gl.glNewList(houseDisplayList, GL2.GL_COMPILE);
-        drawHouse(gl);
+        // Create a new GLU object.
+        glu = GLU.createGLU();
+
+        // Generate a name (id) for the texture.
+        // This is called once in init no matter how many textures we want to generate in the texture vector
+        gl.glGenTextures(NO_TEXTURES, texture, 0);
+
+        // Define the filters used when the texture is scaled.
+        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR);
+        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR);
+
+        // Do not forget to enable texturing.
+        gl.glEnable(GL.GL_TEXTURE_2D);
+
+        // The following lines are for creating ONE texture
+        // If you want TWO textures modify NO_TEXTURES=2 and copy-paste again the next lines of code
+        // up until (and including) this.makeRGBTexture(...)
+        // Modify texture[0] and tex[0] to texture[1] and tex[1] in the new code and that's it
+
+        // Bind (select) the texture.
+        gl.glBindTexture(GL.GL_TEXTURE_2D, texture[0]);
+
+        // Read the texture from the image.
+        try {
+            tex[0] = TextureReader.readTexture("textura2.jpg");
+            // This line reads another image that will be used to replace a part of the previous
+            tex[1] = TextureReader.readTexture("textura3.jpg");
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+
+
+        // Construct the texture and use mipmapping in the process.
+        this.makeRGBTexture(gl, glu, tex[0], GL.GL_TEXTURE_2D, true);
         gl.glEndList();
     }
 
-    private void drawHouse(GL2 gl) {
-        gl.glBegin(GL2.GL_TRIANGLES);
-
-        // Roof
-        gl.glColor3f(1.0f, 0.0f, 0.0f);
-        gl.glVertex2f(-0.5f, 0.5f);
-        gl.glVertex2f(0.5f, 0.5f);
-        gl.glVertex2f(0.0f, 0.75f);
-
-        // Left wall
-        gl.glColor3f(0.0f, 1.0f, 0.0f);
-        gl.glVertex2f(-0.5f, 0.5f);
-        gl.glVertex2f(-0.5f, -0.5f);
-        gl.glVertex2f(0.0f, 0.0f);
-
-        // Right wall
-        gl.glColor3f(0.0f, 0.0f, 1.0f);
-        gl.glVertex2f(0.5f, 0.5f);
-        gl.glVertex2f(0.5f, -0.5f);
-        gl.glVertex2f(0.0f, 0.0f);
-
-        // Floor
-        gl.glColor3f(1.0f, 1.0f, 0.0f);
-        gl.glVertex2f(-0.5f, -0.5f);
-        gl.glVertex2f(0.5f, -0.5f);
-        gl.glVertex2f(0.0f, 0.0f);
-
-        gl.glEnd();
-    }
 
     @Override
     public void dispose(GLAutoDrawable glAutoDrawable) {
@@ -114,33 +112,41 @@ public class MainFrame extends JFrame implements GLEventListener {
         GL2 gl = canvas.getGL().getGL2();
         gl.glClear(GL2.GL_COLOR_BUFFER_BIT);
 
-        // Draw the sun
-        gl.glColor3f(1.0f, 1.0f, 0.0f);
-        gl.glBegin(GL2.GL_POLYGON);
-        for (int i = 0; i < 360; i++) {
-            double angle = Math.toRadians(i);
-            gl.glVertex2d(sunX + sunRadius * Math.cos(angle), sunY + sunRadius * Math.sin(angle));
-        }
+        // Replace all of our texture with another one.
+        gl.glBindTexture(GL.GL_TEXTURE_2D, texture[0]); // the pixel data for this texture is given by tex[0] in our example.
+        gl.glTexSubImage2D(GL.GL_TEXTURE_2D, 0, 0, 0, tex[1].getWidth(), tex[1].getHeight(), GL.GL_RGB, GL.GL_UNSIGNED_BYTE, tex[1].getPixels());
+
+
+        // Draw a square and apply a texture on it.
+        gl.glBegin(GL2.GL_QUADS);
+        // Lower left corner.
+        gl.glTexCoord2f(0.0f, 0.0f);
+        gl.glVertex2f(0.1f, 0.1f);
+
+        // Lower right corner.
+        gl.glTexCoord2f(1.0f, 0.0f);
+        gl.glVertex2f(0.9f, 0.1f);
+
+        // Upper right corner.
+        gl.glTexCoord2f(1.0f, 1.0f);
+        gl.glVertex2f(0.9f, 0.9f);
+
+        // Upper left corner.
+        gl.glTexCoord2f(0.0f, 1.0f);
+        gl.glVertex2f(0.1f, 0.9f);
         gl.glEnd();
-
-        // Draw the house
-        gl.glCallList(houseDisplayList);
-
-        // Update the sun position
-        sunX += 0.01f;
-        if (sunX > 1.0f) {
-            sunX = -1.0f;
-        }
     }
 
     public void reshape(GLAutoDrawable canvas, int left, int top, int width, int height) {
-        GL2 gl = canvas.getGL().getGL2();
-        gl.glViewport(0, 0, width, height);
-        gl.glMatrixMode(GL2.GL_PROJECTION);
-        gl.glLoadIdentity();
-        glu.gluOrtho2D(-1.0, 1.0, -1.0, 1.0);
-        gl.glMatrixMode(GL2.GL_MODELVIEW);
-        gl.glLoadIdentity();
+
+    }
+
+    private void makeRGBTexture(GL gl, GLU glu, TextureReader.Texture img, int target, boolean mipmapped) {
+        if (mipmapped) {
+            glu.gluBuild2DMipmaps(target, GL.GL_RGB8, img.getWidth(), img.getHeight(), GL.GL_RGB, GL.GL_UNSIGNED_BYTE, img.getPixels());
+        } else {
+            gl.glTexImage2D(target, 0, GL.GL_RGB, img.getWidth(), img.getHeight(), 0, GL.GL_RGB, GL.GL_UNSIGNED_BYTE, img.getPixels());
+        }
     }
 
 }
