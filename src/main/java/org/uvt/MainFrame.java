@@ -58,7 +58,7 @@ public class MainFrame extends JFrame implements GLEventListener {
         this.animator.start();
     }
 
-    private GLU glu;
+
     public GLCanvas canvas;
 
     public void init(GLAutoDrawable canvas) {
@@ -76,36 +76,25 @@ public class MainFrame extends JFrame implements GLEventListener {
     }
 
     public void display(GLAutoDrawable canvas) {
+        drawCircle(canvas);
+    }
+
+    public void drawCircle(GLAutoDrawable canvas) {
         GL2 gl = canvas.getGL().getGL2();
 
-        // Set the color of the first vertex
+        // Set the color of the circle
         gl.glColor3f(1.0f, 0.0f, 0.0f);
 
-        // Draw the first line using GL_LINES
-        gl.glBegin(GL2.GL_LINES);
-        gl.glVertex2f(-0.5f, 0.5f);
-        gl.glVertex2f(0.5f, 0.5f);
-        gl.glEnd();
+        // Set the number of points to draw the circle
+        int numPoints = 360;
 
-        // Set the color of the second vertex
-        gl.glColor3f(0.0f, 1.0f, 0.0f);
-
-        // Draw the second line using GL_LINE_STRIP
-        gl.glBegin(GL2.GL_LINE_STRIP);
-        gl.glVertex2f(0.5f, 0.5f);
-        gl.glVertex2f(0.5f, -0.5f);
-        gl.glEnd();
-
-        // Set the color of the third vertex
-        gl.glColor3f(0.0f, 0.0f, 1.0f);
-
-        // Draw the third line using GL_LINE_LOOP
+        // Draw the circle
         gl.glBegin(GL2.GL_LINE_LOOP);
-        gl.glVertex2f(0.5f, -0.5f);
-        gl.glVertex2f(-0.5f, -0.5f);
-        gl.glVertex2f(-0.5f, 0.5f);
+        for (int i = 0; i < numPoints; i++) {
+            double angle = 2 * Math.PI * i / numPoints;
+            gl.glVertex2d(Math.cos(angle), Math.sin(angle));
+        }
         gl.glEnd();
-
     }
 
     public void reshape(GLAutoDrawable canvas, int left, int top, int width, int height) {
