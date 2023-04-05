@@ -3,26 +3,26 @@ package org.uvt;
 import com.jogamp.opengl.*;
 import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.glu.GLU;
-import com.jogamp.opengl.GL2;
+import com.jogamp.opengl.util.texture.Texture;
+import com.jogamp.opengl.util.texture.awt.AWTTextureIO;
 
 
 //https://en.wikiversity.org/wiki/Computer_graphics/2013-2014/Laboratory_4
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.IOException;
+import java.awt.image.BufferedImage;
 
 public class MainFrame extends JFrame implements GLEventListener {
 
     // Number of textures we want to create
-    private final int NO_TEXTURES = 2;
-
-    private int texture[] = new int[NO_TEXTURES];
-    TextureReader.Texture[] tex = new TextureReader.Texture[NO_TEXTURES];
 
     // GLU object used for mipmapping.
-    private GLU glu;
-    public GLCanvas canvas;
+    private static final int ROWS = 8;
+    private static final int COLUMNS = 8;
+    private static final int SQUARE_SIZE = 50;
+    private Texture whiteTexture, blackTexture;
+    GLCanvas canvas;
 
 
     public MainFrame() {
@@ -61,92 +61,66 @@ public class MainFrame extends JFrame implements GLEventListener {
 
     }
 
-    public void init(GLAutoDrawable canvas) {
-        GL2 gl = canvas.getGL().getGL2();
+    @Override
+    public void init(GLAutoDrawable drawable) {
+        GL2 gl = drawable.getGL().getGL2();
 
-        // Create a new GLU object.
-        glu = GLU.createGLU();
+        gl.glMatrixMode(GL2.GL_PROJECTION);
+        gl.glLoadIdentity();
+        gl.glOrtho(0, COLUMNS * SQUARE_SIZE, 0, ROWS * SQUARE_SIZE, -1, 1);
 
-        // Generate a name (id) for the texture.
-        // This is called once in init no matter how many textures we want to generate in the texture vector
-        gl.glGenTextures(NO_TEXTURES, texture, 0);
+        gl.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
-        // Define the filters used when the texture is scaled.
-        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR);
-        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR);
+        // Create white texture
+        BufferedImage whiteImage = new BufferedImage(SQUARE_SIZE, SQUARE_SIZE, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D whiteGraphics = whiteImage.createGraphics();
+        whiteGraphics.setColor(Color.WHITE);
+        whiteGraphics.fillRect(0, 0, SQUARE_SIZE, SQUARE_SIZE);
+        whiteGraphics.dispose();
+        whiteTexture = AWTTextureIO.newTexture(drawable.getGLProfile(), whiteImage, true);
 
-        // Do not forget to enable texturing.
-        gl.glEnable(GL.GL_TEXTURE_2D);
-
-        // The following lines are for creating ONE texture
-        // If you want TWO textures modify NO_TEXTURES=2 and copy-paste again the next lines of code
-        // up until (and including) this.makeRGBTexture(...)
-        // Modify texture[0] and tex[0] to texture[1] and tex[1] in the new code and that's it
-
-        // Bind (select) the texture.
-        gl.glBindTexture(GL.GL_TEXTURE_2D, texture[0]);
-
-        // Read the texture from the image.
-        try {
-            tex[0] = TextureReader.readTexture("textura2.jpg");
-            // This line reads another image that will be used to replace a part of the previous
-            tex[1] = TextureReader.readTexture("textura3.jpg");
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
-
-
-        // Construct the texture and use mipmapping in the process.
-        this.makeRGBTexture(gl, glu, tex[0], GL.GL_TEXTURE_2D, true);
-        gl.glEndList();
+        // Create black texture
+        BufferedImage blackImage = new BufferedImage(SQUARE_SIZE, SQUARE_SIZE, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D blackGraphics = blackImage.createGraphics();
+        blackGraphics.setColor(Color.BLACK);
+        blackGraphics.fillRect(0, 0, SQUARE_SIZE, SQUARE_SIZE);
+        blackGraphics.dispose();
+        blackTexture = AWTTextureIO.newTexture(drawable.getGLProfile(), blackImage, true);
     }
-
 
     @Override
-    public void dispose(GLAutoDrawable glAutoDrawable) {
-
+    public void dispose(GLAutoDrawable drawable) {
+        whiteTexture.destroy((GL) drawable.getGL().getGLProfile());
+        blackTexture.destroy((GL) drawable.getGL().getGLProfile());
     }
 
-    public void display(GLAutoDrawable canvas) {
-        GL2 gl = canvas.getGL().getGL2();
-        gl.glClear(GL2.GL_COLOR_BUFFER_BIT);
+    @Override
+    public void display(GLAutoDrawable drawable) {
+        GL2 gl = drawable.getGL().getGL2();
+        gl.glClear(GL.GL_COLOR_BUFFER_BIT);
 
-        // Replace all of our texture with another one.
-        gl.glBindTexture(GL.GL_TEXTURE_2D, texture[0]); // the pixel data for this texture is given by tex[0] in our example.
-        gl.glTexSubImage2D(GL.GL_TEXTURE_2D, 0, 0, 0, tex[1].getWidth(), tex[1].getHeight(), GL.GL_RGB, GL.GL_UNSIGNED_BYTE, tex[1].getPixels());
-
-
-        // Draw a square and apply a texture on it.
-        gl.glBegin(GL2.GL_QUADS);
-        // Lower left corner.
-        gl.glTexCoord2f(0.0f, 0.0f);
-        gl.glVertex2f(0.1f, 0.1f);
-
-        // Lower right corner.
-        gl.glTexCoord2f(1.0f, 0.0f);
-        gl.glVertex2f(0.9f, 0.1f);
-
-        // Upper right corner.
-        gl.glTexCoord2f(1.0f, 1.0f);
-        gl.glVertex2f(0.9f, 0.9f);
-
-        // Upper left corner.
-        gl.glTexCoord2f(0.0f, 1.0f);
-        gl.glVertex2f(0.1f, 0.9f);
-        gl.glEnd();
-    }
-
-    public void reshape(GLAutoDrawable canvas, int left, int top, int width, int height) {
-
-    }
-
-    private void makeRGBTexture(GL gl, GLU glu, TextureReader.Texture img, int target, boolean mipmapped) {
-        if (mipmapped) {
-            glu.gluBuild2DMipmaps(target, GL.GL_RGB8, img.getWidth(), img.getHeight(), GL.GL_RGB, GL.GL_UNSIGNED_BYTE, img.getPixels());
-        } else {
-            gl.glTexImage2D(target, 0, GL.GL_RGB, img.getWidth(), img.getHeight(), 0, GL.GL_RGB, GL.GL_UNSIGNED_BYTE, img.getPixels());
+        for (int i = 0; i < ROWS; i++) {
+            for (int j = 0; j < COLUMNS; j++) {
+                Texture texture = (i + j) % 2 == 0 ? whiteTexture : blackTexture;
+                texture.enable(gl);
+                texture.bind(gl);
+                gl.glBegin(GL2.GL_QUADS);
+                gl.glTexCoord2f(0, 0);
+                gl.glVertex2f(j * SQUARE_SIZE, i * SQUARE_SIZE);
+                gl.glTexCoord2f(1, 0);
+                gl.glVertex2f(j * SQUARE_SIZE + SQUARE_SIZE, i * SQUARE_SIZE);
+                gl.glTexCoord2f(1, 1);
+                gl.glVertex2f(j * SQUARE_SIZE + SQUARE_SIZE, i * SQUARE_SIZE + SQUARE_SIZE);
+                gl.glTexCoord2f(0, 1);
+                gl.glVertex2f(j * SQUARE_SIZE, i * SQUARE_SIZE + SQUARE_SIZE);
+                gl.glEnd();
+                texture.disable(gl);
+            }
         }
+    }
+
+    @Override
+    public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
     }
 
 }
